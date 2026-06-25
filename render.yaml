@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: webhook-protector
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn protector:app
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: API_KEY
+        sync: false
