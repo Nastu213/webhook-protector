@@ -26,7 +26,9 @@ DISCORD_PREFIXES = [
     "https://canary.discord.com/api/webhooks/",
 ]
 
-ALLOWED_KEYWORDS = ["🎒 Inventory", "🛒 Total Items"]
+INVENTORY_EMOJI = "\U0001f392"
+CART_EMOJI = "\U0001f6d2"
+ALLOWED_KEYWORDS = [f"{INVENTORY_EMOJI} Inventory", f"{CART_EMOJI} Total Items"]
 
 
 def load_db():
@@ -85,6 +87,10 @@ def payload_matches_filter(payload):
     return False
 
 
+def build_url(path):
+    return f"https://{request.host.split(':')[0]}{path}"
+
+
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({
@@ -115,7 +121,7 @@ def protect_webhook():
     existing = next(((k, v) for k, v in db.items() if v["real_url"] == url), None)
     if existing:
         return jsonify({
-            "protected_url": f"{request.host_url}webhook/{existing[0]}",
+            "protected_url": f"{build_url('/webhook/' + existing[0])}",
             "id": existing[0],
             "created_at": existing[1]["created_at"],
             "message": "Already registered",
@@ -130,7 +136,7 @@ def protect_webhook():
     save_db(db)
 
     return jsonify({
-        "protected_url": f"{request.host_url}webhook/{uid}",
+        "protected_url": f"{build_url('/webhook/' + uid)}",
         "id": uid,
         "created_at": db[uid]["created_at"],
         "message": "Webhook registered",
@@ -146,7 +152,7 @@ def list_webhooks():
     return jsonify({
         "count": len(db),
         "webhooks": [
-            {"id": uid, "protected_url": f"{request.host_url}webhook/{uid}", "created_at": meta["created_at"], "stats": meta["stats"]}
+            {"id": uid, "protected_url": build_url(f"/webhook/{uid}"), "created_at": meta["created_at"], "stats": meta["stats"]}
             for uid, meta in db.items()
         ],
     })
@@ -207,6 +213,6 @@ def handle_webhook(uid):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 3000))
-    print(f"[{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}] 🚀 Webhook proxy running on port {port}")
+    port = int(os.environ.get("PORT", 10000))
+    print(f"[{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}] Webhook proxy running on port {port}")
     app.run(host="0.0.0.0", port=port, debug=False)
