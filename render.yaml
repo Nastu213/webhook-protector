@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: discord-webhook-proxy
+    env: node
+    region: frankfurt          # closest to Discord EU servers — change to oregon / ohio if needed
+    plan: starter              # free plan doesn't support persistent disks; use starter ($7/mo) for real persistence
+    buildCommand: npm install --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /
+    autoDeploy: true           # auto-redeploy on git push
+
+    envVars:
+      # ── Required — set these in the Render dashboard, NOT here ──────────────
+      - key: API_KEY
+        sync: false            # secret: set manually in Render > Environment
+
+      - key: DISCORD_WEBHOOK_URL
+        sync: false            # ⚠ legacy var (unused by server.js — webhook URLs are stored via POST /protect)
+                               #   keep it as a reminder but it's not read by the app
+
+      # ── Optional tuning ─────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+
+      - key: DB_PATH
+        value: /data/webhooks.json  # must match the disk mountPath below
+
+  # ── Persistent disk (requires starter plan or above) ─────────────────────────
+  # Without this, webhooks.json resets on every deploy/restart.
+  # Comment this section out if you're on the free plan (data will be lost on restart).
+  #
+  # To enable:
+  #   1. Upgrade to Render Starter ($7/mo)
+  #   2. Uncomment the block below
+  #   3. Re-deploy
+  #
+  # disk:
+  #   name: webhook-data
+  #   mountPath: /data
+  #   sizeGB: 1
